@@ -18,36 +18,20 @@ clc, clear, close all
 
 
 %% Define obj characteristics
-Environment.p = 1.225; % air density
-Environment.grip_factor = 0.80; % tire grip factor vs. TTC data
+World.p = 1.225; % air density
+World.grip_scale = 0.80; % tire grip factor vs. TTC data
 
-Car(1).m = 167 + 90.7; % KG
-Car(1).ax = 1.0.*9.8; % m/s^2
-Car(1).ay = 1.5.*9.8; % m/s^2 
-Car(1).Cd = 1.0; 
-Car(1).Cl = -1.0;
-Car(1).A = 0.90; % m^2
-Car(1).TopSpeed = 35; % m/s
-Car(1).GGV.drag = @(v) Car(1).Cd .* Car(1).A .* Environment.p .* v.^2 ./ 2;
-Car(1).GGV.lift = @(v) Car(1).Cl .* Car(1).A .* Environment.p .* v.^2 ./ 2;
-Car(1).GGV.axT = @(v) (Car(1).ax - Car(1).GGV.drag(v)./Car(1).m).*(v<=Car(1).TopSpeed); % positive, simplified
-Car(1).GGV.axB = @(v) (Car(1).ax + Car(1).GGV.drag(v)./Car(1).m).*(v<=Car(1).TopSpeed); % positive, simplified
-Car(1).GGV.ay = @(v) Car(1).ay + 0.1.*v; % positive, simplified
+Car(1) = CarPM('c1.json',World);
 
 %% Plot GGV
-% v = 0:30;
-% plot(v,Car(1).GGV.axT(v), v, Car(1).GGV.axB(v), v, Car(1).GGV.ay(v))
-% yline(0)
+v = 0:30;
+plot(v,Car(1).axT_fcn(v), v, Car(1).axB_fcn(v), v, Car(1).ay_fcn(v))
 
 %% Utilize GGV
 figure
-% SWP = [0, 75, 100];
-% RWP = [0, 61.2, 27.2];
-% VWP = [0, 30, 20];
-
 load("VIR_clothoid.mat")
 RWP = abs(1./KWP);
-RWP(1) = 0;
+RWP(1) = 0.01; % has to be > 0
 RWP(~isfinite(RWP)) = 10000;
 
 VWP = cornVel(Car(1),SWP,RWP);
@@ -58,14 +42,19 @@ hold on
 
 VWPMin = VWP.*0 + realmax; % Set VWPMin HIGH
 
+disp("Walking points...")
 for i = 1:length(VWP)
     WWP = walk(i,Car(1),SWP,VWP); % Walk from point
     VWPMin = VWPMin .* (VWPMin <= WWP) + WWP .* (VWPMin > WWP); 
-    disp(i);
+    if ~(mod(i,100))
+        fprintf("Passed point " + i + "\n");
+    end
 end
+disp("Done walking points")
+
 plot(SWP,VWPMin,'g.-')
-Car(1).LapTime = lapTime(SWP,VWPMin);
-disp(Car(1).LapTime)
+Car(1).laptime = lapTime(SWP,VWPMin);
+fprintf("Car 1 traversed track in %3.3f seconds.\n",Car(1).laptime)
 xlabel("Distance (m)")
 ylabel("Velocity (m/s)")
 
@@ -78,28 +67,22 @@ function UWP = walk(n,Car,SWP,VWP)
     % Walk forward from n
     for i = (n+1):length(SWP)
         dx = SWP(i) - SWP(i-1); % cur-last
-        UWP(i) = sqrt(UWP(i-1).^2 + 0.5 .* Car.GGV.axT(UWP(i-1)) .* dx);
+        UWP(i) = sqrt(UWP(i-1).^2 + 0.5 .* Car.axT_fcn(UWP(i-1)) .* dx);
     end
     % Walk backward from n
     for i = 1:(n-1)
         j = n-i; % reverse i
         dx = SWP(j+1) - SWP(j); % next-cur
-        UWP(j) = sqrt(UWP(j+1).^2 + 0.5.* Car.GGV.axT(UWP(j+1)) .* dx);
+        UWP(j) = sqrt(UWP(j+1).^2 + 0.5 .* Car.axB_fcn(UWP(j+1)) .* dx);
     end
+    
 end
 
 function VWP = cornVel(Car,SWP,RWP)
-    persistent iter
     VWP = SWP.*0;
     for i = 1:length(SWP)
-        err = 1;
-        iter = 0;
-        while abs(err) > 0.01
-            iter = iter + 1;
-            VWP(i) = (Car.GGV.ay(VWP(i)) .* RWP(i)) .^ 0.5;
-            err = VWP(i).^2 ./ RWP(i) - Car.GGV.ay(VWP(i)); % compare acceleration
-            disp([iter, abs(err)])
-        end
+        err = @(v) v.*abs(v) ./ RWP(i) - Car.ay_fcn(v);
+        VWP(i) = fzero(err,0);
     end
     disp("Done calculating cornering velocities")
 end
