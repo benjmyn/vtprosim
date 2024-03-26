@@ -39,40 +39,38 @@ classdef CarPM
         
     end
     methods
-        function [Obj] = CarPM(json,World)
+        function [Car] = CarPM(json,World)
             % Read .json to Struct
             Str = readstruct(json);
             
             % Convert Struct to Object
             for fn = fieldnames(Str)' 
                 try 
-                    Obj.(fn{1}) = Str.(fn{1});
+                    Car.(fn{1}) = Str.(fn{1});
                 catch
                     warning("Unable to assign field """+fn{1}+"""");
                 end
             end
 
-            % Define 4-term Pajecka Function
-            % Obj.pajecka_fcn = @(a,N) (Obj.B4(1) - Obj.B4(2).*N).*N ...
-            %                   .* sin(Obj.B4(4).*atan(Obj.B4(3).*a));
-            Obj.pajecka_fcn = @(N) World.grip_scale .* (Obj.B4(1) - Obj.B4(2).*N) .* N ...
-                                   .*heaviside(Obj.B4(1) - Obj.B4(2).*N); % if < 0, = 0
+            % Define Pajecka Function
+            Car.pajecka_fcn = @(N) World.grip_scale .* (Car.B4(1) - Car.B4(2).*N) .* N ...
+                                   .*heaviside(Car.B4(1) - Car.B4(2).*N); % if < 0, = 0
 
             % Define aerodynamic forces
-            Obj.drag_fcn = @(v) 1/2 .* Obj.Cd .* Obj.A .* World.p .* v.^2;
-            Obj.lift_fcn = @(v) 1/2 .* Obj.Cl .* Obj.A .* World.p .* v.^2; 
+            Car.drag_fcn = @(v) 1/2 .* Car.Cd .* Car.A .* World.p .* v.^2;
+            Car.lift_fcn = @(v) 1/2 .* Car.Cl .* Car.A .* World.p .* v.^2; 
 
             % Define driving forces
-            Obj.W = Obj.m .* 9.8;
-            Obj.N_fcn = @(v) (Obj.W + Obj.lift_fcn(v));
-            Obj.FxB_fcn = @(v) 4 .* Obj.ax_scale .* Obj.pajecka_fcn(Obj.N_fcn(v) ./ 4) + Obj.drag_fcn(v);
-            Obj.FxT_fcn = @(v) 4 .* Obj.ax_scale .* Obj.pajecka_fcn(Obj.N_fcn(v) ./ 4) - Obj.drag_fcn(v);
-            Obj.Fy_fcn = @(v) 4 .* Obj.pajecka_fcn(Obj.N_fcn(v) ./ 4);
+            Car.W = Car.m .* 9.8;
+            Car.N_fcn = @(v) (Car.W + Car.lift_fcn(v));
+            Car.FxB_fcn = @(v) 4 .* Car.ax_scale .* Car.pajecka_fcn(Car.N_fcn(v) ./ 4) + Car.drag_fcn(v);
+            Car.FxT_fcn = @(v) 4 .* Car.ax_scale .* Car.pajecka_fcn(Car.N_fcn(v) ./ 4) - Car.drag_fcn(v);
+            Car.Fy_fcn = @(v) 4 .* Car.pajecka_fcn(Car.N_fcn(v) ./ 4);
 
             % Define GGV accelerations (in g's)
-            Obj.axB_fcn = @(v) Obj.FxB_fcn(v) ./ Obj.m;
-            Obj.axT_fcn = @(v) Obj.FxT_fcn(v) ./ Obj.m;
-            Obj.ay_fcn = @(v) Obj.Fy_fcn(v) ./ Obj.m;
+            Car.axB_fcn = @(v) Car.FxB_fcn(v) ./ Car.m;
+            Car.axT_fcn = @(v) Car.FxT_fcn(v) ./ Car.m;
+            Car.ay_fcn = @(v) Car.Fy_fcn(v) ./ Car.m;
         end
     end
 end
