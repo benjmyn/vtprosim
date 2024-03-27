@@ -82,7 +82,7 @@ classdef CarPM
             % Define driving forces
             Car.N_fcn = @(v) (Car.W + Car.lift_fcn(v));
             Car.FxB_fcn = @(v) 4 .* Car.ax_scale .* Car.pajecka_fcn(Car.N_fcn(v) ./ 4) + Car.drag_fcn(v);
-            Car.FxT_fcn = @(v) min(4 .* Car.ax_scale .* Car.pajecka_fcn(Car.N_fcn(v) ./ 4),...
+            Car.FxT_fcn = @(v) min(3.2 .* Car.ax_scale .* Car.pajecka_fcn(Car.N_fcn(v) ./ 4),...
                                    Car.powertrainLookup(v)) - Car.drag_fcn(v);
             Car.Fy_fcn = @(v) 4 .* Car.pajecka_fcn(Car.N_fcn(v) ./ 4);
 
