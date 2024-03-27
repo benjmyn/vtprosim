@@ -21,7 +21,7 @@ clc, clear, close all
 World.p = 1.225; % air density
 World.grip_scale = 0.80; % tire grip factor vs. TTC data
 
-Car(1) = CarPM('c1.json','p1.json',World);
+Car(1) = CarPM('c1_acc_tire.json','p1.json',World);
 
 %% Plot GGV
 % v = 0:30;
@@ -29,7 +29,7 @@ Car(1) = CarPM('c1.json','p1.json',World);
 
 %% Utilize GGV
 figure
-load("accel.mat")
+load("skidpad.mat")
 % SWP = linspace(0,100,100);
 % KWP = [100,linspace(0.04,0.04,48),0.1,linspace(0.06,0.06,50)];
 
