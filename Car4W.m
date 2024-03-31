@@ -13,6 +13,7 @@ classdef Car4W
         % General Vehicle Properties
         m(1,1);
         W(1,4);
+        laptime(1,1);
         % Tire Properties
         B4(1,4);
         ax_scale(1,1);
@@ -84,26 +85,22 @@ classdef Car4W
 
             % Calculate FxB,FxT,Fy
             Car.axB_fcn = @(v) Car.approxAXB(v);
+            Car.axT_fcn = @(v) Car.approxAXT(v);
+            Car.ay_fcn = @(v) Car.approxAY(v);
         end
         function ax = approxAXB(Car,v)
             ax = 0;
             err = 1;
             while abs(err) > 0.001
                 Wt = Car.W + Car.m .* ([-1,-1,1,1] .* ax .* Car.h ./ (Car.l));
-                % (ax - Car.drag_fcn(v)./Car.m)
                 N = Wt - Car.L_fcn(v);
-                if any(N <= 0)
-                    axb_max = Car.l .* Car.b ./ Car.a .* -9.8;
-                    Wt = Car.W + Car.m .* ([-1,-1,1,1] .* axb_max .* Car.h ./ (Car.l));
-                    N = Wt - Car.L_fcn(v);
-                end
-                ax_f = sum(-Car.pajecka_fcn(N(1:2))) ./ sum(Wt(1:2) ./ 9.8);
-                ax_r = sum(-Car.pajecka_fcn(N(3:4))) ./ sum(Wt(3:4) ./ 9.8);
+                No = Car.W - Car.L_fcn(v);
+                ax_drag = Car.drag_fcn(v) ./ Car.m;
+                ax_max = -sum(No(3:4)) .* (Car.l/2) ./ (Car.h .* Car.m);
+                ax_f = sum(-Car.pajecka_fcn(N(1:2)).*Car.ax_scale) ./ sum(Wt(1:2) ./ 9.8);
                 ax_temp = ax;
-                ax = max([ax_f,ax_r]);
+                ax = max([(ax_f - ax_drag),ax_max]);
                 err = ax - ax_temp;
-                disp([v,ax,ax_f,ax_r,err])
-                disp([N,any(N<=0)])
             end
         end
         function ax = approxAXT(Car,v)
@@ -112,13 +109,33 @@ classdef Car4W
             while abs(err) > 0.001
                 Wt = Car.W + Car.m .* ([-1,-1,1,1] .* ax .* Car.h ./ (Car.l));
                 N = Wt - Car.L_fcn(v);
-                ax_r = sum(+Car.pajecka_fcn(N(3:4))) ./ sum(Wt ./ 9.8);
+                No = Car.W - Car.L_fcn(v);
+                ax_drag = Car.drag_fcn(v) ./ Car.m;
+                ax_max = sum(No(1:2)) .* (Car.l/2) ./ (Car.h .* Car.m);
+                ax_r = sum(+Car.pajecka_fcn(N(3:4)).*Car.ax_scale) ./ sum(Wt ./ 9.8);
                 ax_eng = Car.powertrainLookup(v) ./ Car.m;
                 ax_temp = ax;
-                ax = min([ax_r,ax_eng]);
+                ax = min([ax_r-ax_drag,ax_eng-ax_drag,ax_max]);
                 err = ax - ax_temp;
-                % disp([ax,ax_r,ax_eng, err])
-                % disp(N)
+            end
+        end
+        function ay = approxAY(Car,v)
+            ay = 0;
+            err = 1;
+            while abs(err) >= 0.001
+                Wt = Car.W + Car.m .* (ay ./ [Car.tf,-Car.tf,Car.tr,-Car.tr] .* ...
+                             [Car.KF,Car.KF,Car.KR,Car.KR] .* (Car.h - mean([Car.zf,Car.zr])) ./ ...
+                             (Car.KF + Car.KR) + ...
+                             [Car.b,Car.b,Car.a,Car.a] .* [Car.zf,Car.zf,Car.zr,Car.zr] ./ (Car.a+Car.b));
+                N = Wt - Car.L_fcn(v);
+                No = Car.W - Car.L_fcn(v);
+                % ay_max = sum(No(2:3)) .* mean([Car.tf,Car.tr]) ./ (Car.h .* Car.m);
+                ay_f = sum(Car.pajecka_fcn(N(1:2))) ./ sum(Wt(1:2)./9.8);
+                ay_r = sum(Car.pajecka_fcn(N(3:4))) ./ sum(Wt(3:4)./9.8);
+                ay_temp = ay;
+                ay = min([ay_f,ay_r]);
+                % disp([v,ay,ay_f,ay_r])
+                err = ay - ay_temp;
             end
         end
         function [Fx] = powertrainLookup(Car,v)

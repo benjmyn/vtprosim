@@ -21,7 +21,8 @@ clc, clear, close all
 World.p = 1.225; % air density
 World.grip_scale = 0.80; % tire grip factor vs. TTC data
 
-Car(1) = CarPM('c1_acc_tire.json','p1.json',World);
+% Car(1) = CarPM('c1.json','p1.json',World);
+Car(1) = Car4W('c4.json','p1.json',World);
 
 %% Plot GGV
 % v = 0:30;
@@ -96,7 +97,7 @@ function Log = walk(Car,SWP,VWP,RWP)
             fprintf(n+"/"+length(SWP)+"\n")
         end
     end
-    [~,Log.gear,Log.RPM] = Car.powertrainLookup(Log.MVWP);
+    % [~,Log.gear,Log.RPM] = Car.powertrainLookup(Log.MVWP);
 end
 
 function VWP = cornVel(Car,SWP,RWP)

@@ -80,13 +80,13 @@ classdef CarPM
             Car.lift_fcn = @(v) 1/2 .* Car.Cl .* Car.A .* World.p .* v.^2; 
 
             % Define driving forces
-            Car.N_fcn = @(v) (Car.W + Car.lift_fcn(v));
+            Car.N_fcn = @(v) (Car.W - Car.lift_fcn(v));
             Car.FxB_fcn = @(v) 4 .* Car.ax_scale .* Car.pajecka_fcn(Car.N_fcn(v) ./ 4) + Car.drag_fcn(v);
             Car.FxT_fcn = @(v) min(3.2 .* Car.ax_scale .* Car.pajecka_fcn(Car.N_fcn(v) ./ 4),...
                                    Car.powertrainLookup(v)) - Car.drag_fcn(v);
             Car.Fy_fcn = @(v) 4 .* Car.pajecka_fcn(Car.N_fcn(v) ./ 4);
 
-            % Define GGV accelerations (in g's)
+            % Define GGV accelerations (in m/s^2)
             Car.axB_fcn = @(v) Car.FxB_fcn(v) ./ Car.m;
             Car.axT_fcn = @(v) Car.FxT_fcn(v) ./ Car.m;
             Car.ay_fcn = @(v) Car.Fy_fcn(v) ./ Car.m;
@@ -103,7 +103,7 @@ classdef CarPM
                     % torque = Car.torque(end) .* Car.trans_ratio()
                     Fx(vi) = Car.drag_fcn(v(vi));
                 else
-                    cur_gear(vi) = interp1([0,Car.shift_vel],0:length(Car.gear_ratio),v(vi),"next");
+                    cur_gear(vi) = interp1([-1,Car.shift_vel],0:length(Car.gear_ratio),v(vi),"next");
                     rpm(vi) = v(vi) ./ (Car.wheel_radius) .* (2*pi/60)^-1 .* Car.trans_ratio(cur_gear(vi));
                     torque(vi) = interp1(Car.rpm,Car.torque,rpm(vi),'linear') .* Car.trans_ratio(cur_gear(vi));
                     Fx(vi) = torque(vi) ./ Car.wheel_radius;
