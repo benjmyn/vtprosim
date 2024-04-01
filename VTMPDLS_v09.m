@@ -21,15 +21,16 @@ clc, clear, close all
 World.p = 1.225; % air density
 World.grip_scale = 0.80; % tire grip factor vs. TTC data
 
-load("accel.mat")
+load("moog.mat")
 start_from_zero = true;
 
-Paddock(1).car = Car4W('c4.json','p1.json',World);
-Paddock(2).car = CarPM('c1.json','p1.json',World);
-
-%% Plot GGV
-% v = 0:30;
-% plot(v,Car(1).axT_fcn(v), v, Car(1).axB_fcn(v), v, Car(1).ay_fcn(v))
+Paddock(1).car = Car4W('car_01.json','power_01.json',World);
+% Paddock(2).car = CarPM('c1.json','p1.json',World);
+Paddock(2).car = Car4W('car_02.json','power_02.json',World);
+Paddock(1).car.final_drive = 3.00;
+% Paddock(2).car.final_drive = 2.50;
+Paddock(1).car.update();
+% Paddock(2).car.update();
 
 %% Utilize GGV
 RWP = abs(1./KWP);
@@ -57,12 +58,13 @@ end
 
 % plot(SWP,Log(1).VWP,'b.',SWP,Log(2).VWP,'m.')
 hold on
-plot(SWP,Log(1).MVWP,'m-',SWP,Log(2).MVWP,'m--')
+plot(SWP,Log(1).VWP,'k.')
+plot(SWP,Log(1).MVWP,'m-', SWP,Log(2).MVWP,'m--')
 xlim([-1,SWP(end)+1])
 ylim([0,40])
 xlabel("Distance (m)")
 ylabel("Velocity (m/s)")
-legend("4-Wheel","Point Mass")
+% legend("WR-450","MT-07")
 fprintf("Done!\n")
 
 %% Functions

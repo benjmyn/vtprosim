@@ -1,5 +1,5 @@
 
-classdef Car4W
+classdef Car4W < handle
     properties
         % Vehicle Functions
         pajecka_fcn;
@@ -55,14 +55,14 @@ classdef Car4W
                 try 
                     Car.(fn{1}) = CJ.(fn{1});
                 catch
-                    % warning("Unable to assign car field """+fn{1}+"""");
+                    warning("Unable to assign car field """+fn{1}+"""");
                 end
             end
             for fn = fieldnames(PJ)' 
                 try 
                     Car.(fn{1}) = PJ.(fn{1});
                 catch
-                    % warning("Unable to assign powertrain field """+fn{1}+"""");
+                    warning("Unable to assign powertrain field """+fn{1}+"""");
                 end
             end
 
@@ -80,9 +80,7 @@ classdef Car4W
                                    .*heaviside(N); % if < 0, = 0
             Car.L_fcn = @(v) Car.lift_fcn(v) .* 0.5 .* [Car.CoPb,Car.CoPb,Car.CoPa,Car.CoPa] ./ (Car.l) ...
                          + Car.drag_fcn(v) .* Car.CoPh ./ (Car.l);
-            Car.trans_ratio = Car.primary_drive .* Car.final_drive .* Car.gear_ratio;
-            Car.shift_vel = Car.rpm(end) .* (2*pi/60) ./ Car.trans_ratio .* Car.wheel_radius;
-
+            Car.update();
             % Calculate FxB,FxT,Fy
             Car.axB_fcn = @(v) Car.approxAXB(v);
             Car.axT_fcn = @(v) Car.approxAXT(v);
@@ -149,6 +147,10 @@ classdef Car4W
                 torque = interp1(Car.rpm,Car.torque,rpm,'linear','extrap') .* Car.trans_ratio(cur_gear);
                 Fx = torque ./ Car.wheel_radius;
             end
+        end
+        function update(Car)
+            Car.trans_ratio = Car.primary_drive .* Car.final_drive .* Car.gear_ratio;
+            Car.shift_vel = Car.rpm(end) .* (2*pi/60) ./ Car.trans_ratio .* Car.wheel_radius;
         end
     end
 end
