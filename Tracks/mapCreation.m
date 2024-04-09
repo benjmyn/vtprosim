@@ -6,17 +6,12 @@ YWP = T.y';
 DWP = getDisplacement(XWP,YWP);
 Cx = fit(DWP',XWP','smoothingspline');
 Cy = fit(DWP',YWP','smoothingspline');
-SWP = linspace(0,DWP(end),420);
+SWP = linspace(0,DWP(end),1000);
 EWP = Cx(SWP)';
 NWP = Cy(SWP)';
 
 KWP = getCurvature(EWP,NWP);
 start_from_zero = 1;
-
-subplot(2,1,1)
-plot(SWP,KWP,'.-')
-subplot(2,1,2)
-plot(EWP,NWP,'.-')
 
 function [KWP] = getCurvature(XWP,YWP)
     X1 = XWP(1:end-2);
@@ -25,13 +20,11 @@ function [KWP] = getCurvature(XWP,YWP)
     Y1 = YWP(1:end-2);
     Y2 = YWP(2:end-1);
     Y3 = YWP(3:end);
-    theta1 = atan2(Y2-Y1,X2-X1);
-    theta2 = atan2(Y3-Y2,X3-X2);
     A = X1.*(Y2 - Y3) - Y1.*(X2 - X3) + X2.*Y3 - X3.*Y2;
     B = (X1.^2 + Y1.^2).*(Y3 - Y2) + (X2.^2 + Y2.^2).*(Y1 - Y3) + (X3.^2 + Y3.^2).*(Y2 - Y1);
     C = (X1.^2 + Y1.^2).*(X2 - X3) + (X2.^2 + Y2.^2).*(X3 - X1) + (X3.^2 + Y3.^2).*(X1 - X2);
     D = (X1.^2 + Y1.^2).*(X3.*Y2 - X2.*Y3) + (X2.^2 + Y2.^2).*(X1.*Y3 - X3.*Y1) + (X3.^2 + Y3.^2).*(X2.*Y1 - X1.*Y2);
-    R = sqrt((B.^2 + C.^2 - 4.*A.*D) ./ (4.*A.^2)) .* sign(theta2-theta1);
+    R = sqrt((B.^2 + C.^2 - 4.*A.*D) ./ (4.*A.^2));
     KWP = [1./R(1),1./R,1./R(end)];
 end
 function [SWP] = getDisplacement(XWP,YWP)
